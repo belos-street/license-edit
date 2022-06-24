@@ -216,50 +216,65 @@ export default defineComponent({
 
     /**
      * 添加许可证
-     * 1.选中添加 选中的区间数组倒数第二位添加的逻辑和许可证
-     * 2.不选中添加
-     *    2.1 licenseData.value.length > 0 出一对括号包住 licenseData.value数组头部添加开括号 尾部闭括号 倒数第二位添加逻辑元素符号和许可证
-     *    2.2 licenseData.value.length === 0 数组长度是0的时候 添加一个许可证
+     * 1.选中组添加 组内有元素时 在组内最后出现 加上逻辑和许可证
+     * 2.选中组添加 组内无元素时 在组内添加许可证
+     * 3.不选中组添加 且licenseData不只有level === 0的括号元素 直接在最外层加上 加上逻辑和许可证
+     * 4.不选中组添加 且licenseData只有level === 0的括号元素
      */
     function hanldeClickAddLicense() {
       const arr = licenseData.value
       let sgArr = selectGroup.value
       if (sgArr.length !== 0) {
-        /**1 */
-        //1-1. 获取selectGroup的最后一个uid
-        const lastSgUid = sgArr[sgArr.length - 1]
+        //(1，2 )--- 判断选中组 组内是否有元素 根据选中组的第二个元素是否为闭括号判断
+        let secondSgItem = arr.find((item) => item.uid === sgArr[1])
+        if (secondSgItem && secondSgItem.type !== 'closeBracket') {
+          /**1 */
+          //1-1. 获取selectGroup的最后一个uid
+          const lastSgUid = sgArr[sgArr.length - 1]
 
-        //1-2. 根据lastUid找到它在licenseData的元素和索引位置
-        let lastSgIndex = arr.findIndex((item) => item.uid === lastSgUid),
-          lastSgItem = arr[lastSgIndex]
+          //1-2. 根据lastUid找到它在licenseData的元素和索引位置
+          let lastSgIndex = arr.findIndex((item) => item.uid === lastSgUid),
+            lastSgItem = arr[lastSgIndex]
 
-        //1-3. licenseData的lastSgIndex位置添加逻辑和许可证
-        if (!lastSgItem || lastSgIndex === 0) return
-        let uid1 = getUid(),
-          uid2 = getUid()
-        arr.splice(
-          lastSgIndex,
-          0,
-          { type: 'logical', value: 'and', level: lastSgItem.level + 1, uid: uid1 },
-          { type: 'license', value: '', level: lastSgItem.level + 1, uid: uid2 }
-        )
+          //1-3. licenseData的lastSgIndex位置添加逻辑和许可证
+          if (!lastSgItem || lastSgIndex === 0) return
+          let uid1 = getUid(),
+            uid2 = getUid()
+          arr.splice(
+            lastSgIndex,
+            0,
+            { type: 'logical', value: 'and', level: lastSgItem.level + 1, uid: uid1 },
+            { type: 'license', value: '', level: lastSgItem.level + 1, uid: uid2 }
+          )
 
-        //1-4 添加的逻辑和许可证也需要选中
-        sgArr.splice(sgArr.length - 1, 0, uid1, uid2)
+          //1-4 添加的逻辑和许可证也需要选中
+          sgArr.splice(sgArr.length - 1, 0, uid1, uid2)
+        } else {
+          /**2 */
+          //2-1. 获取selectGroup的第一个Item 和 索引
+          let sgFristIndex = arr.findIndex((item) => item.uid === sgArr[0]),
+            sgFristItem = arr[sgFristIndex]
+          if (!sgFristItem) return
+          //2-2. licenseData的 sgFristIndex + 1 位置插入许可证
+          let uid = getUid()
+          arr.splice(sgFristIndex + 1, 0, { type: 'license', value: '', level: sgFristItem.level + 1, uid })
+          //2-3. 添加的许可证也需要选中
+          sgArr.splice(sgFristIndex + 1, 0, uid)
+        }
       } else {
-        /**(2,3) 不选中组添加 */
-        //2
-        if (arr.length > 0) {
-          //2-1.等级全部+1
+        /**(3,4) 不选中组添加 */
+        //3
+        if (arr.length !== 2) {
+          //3-1.等级全部+1
           arr.map((item) => (item.level += 1))
 
-          //2-2.数组头部添加开括号
+          //3-2.数组头部添加开括号
           arr.splice(0, 0, { type: 'openBracket', value: '(', level: 0, uid: getUid() })
 
-          //2-3.数组尾部添加闭括号
+          //3-3.数组尾部添加闭括号
           arr.push({ type: 'closeBracket', value: ')', level: 0, uid: getUid() })
 
-          //2-4.数组倒数第二位添加逻辑和许可证
+          //3-4.数组倒数第二位添加逻辑和许可证
           arr.splice(
             arr.length - 1,
             0,
@@ -267,8 +282,8 @@ export default defineComponent({
             { type: 'license', value: '', level: 1, uid: getUid() }
           )
         } else {
-          //2.2
-          licenseData.value = [{ type: 'license', value: '', level: 0, uid: getUid() }]
+          //4
+          arr.splice(1, 0, { type: 'license', value: '', level: 1, uid: getUid() })
         }
       }
     }
@@ -289,50 +304,43 @@ export default defineComponent({
 
     /**
      * 删除选定组
-     * 1.该组是不是level === 0 的组
-     * 2.该组的兄弟(开括号和许可证类型)是否只有1个
-     *   2.1兄弟只有1个 删除 组的括号
-     *   2.2兄弟大于1个
-     *      2.2.1 选中的是最后一个 删上面的逻辑
-     *      2.2.2 选中的非最后一个 删下面的逻辑
+     * 1.选中的最外一层的组 开括号level === 0
+     * 2.选中的非最外一层的组 且该组在兄弟组中非最后一个组
+     * 3.选中的非最外一层的组 且该组在兄弟组中是最后(或只有)一个组 [只有一组元素(该组)时，不需要删除逻辑组件]
      */
-
     function handleClicRemoveGroup() {
       let arr = licenseData.value
       let sgArr = selectGroup.value
 
       /**1 level === 0 */
       if (sgArr[0] === arr[0].uid) {
-        licenseData.value = []
+        licenseData.value = [{ ...arr[0] }, { ...arr[arr.length - 1] }]
+        selectGroup.value = []
+        return
+      }
+      const lastSgIndex = arr.findIndex((item) => item.uid === sgArr[sgArr.length - 1])
+      const nextItem = arr[lastSgIndex + 1]
+
+      /**2 */
+      //开括号level >= 1 的group 的 闭括号 的下一个item是否为logical类型 true则满足2的条件
+      if (nextItem.type === 'logical') {
+        //2-1. 要删除licenseData中所有selectGroup的item和nextItem
+        licenseData.value = arr.filter((item) => !sgArr.includes(item.uid)).filter((item) => item.uid !== nextItem.uid)
         selectGroup.value = []
         return
       }
 
-      //根据逻辑符号数是否大于1 和兄弟数挂钩
-      console.log(sgArr)
-
-      // const lastSgIndex = arr.findIndex((item) => item.uid === sgArr[sgArr.length - 1])
-      // const nextItem = arr[lastSgIndex + 1]
-      // /**2 */
-      // //开括号level >= 1 的group 的 闭括号 的下一个item是否为logical类型 true则满足2的条件
-      // if (nextItem.type === 'logical') {
-      //   //2-1. 要删除licenseData中所有selectGroup的item和nextItem
-      //   licenseData.value = arr.filter((item) => !sgArr.includes(item.uid)).filter((item) => item.uid !== nextItem.uid)
-      //   selectGroup.value = []
-      //   return
-      // }
-
-      // /**3 */
-      // //判断上一个item是否为逻辑符号  是 则改组没有兄弟组
-      // const fristSgIndex = arr.findIndex((item) => item.uid === sgArr[0]),
-      //   prevItem = arr[fristSgIndex - 1]
-      // if (arr[fristSgIndex - 1].type === 'logical') {
-      //   licenseData.value = arr.filter((item) => !sgArr.includes(item.uid)).filter((item) => item.uid !== prevItem.uid)
-      //   selectGroup.value = []
-      // } else {
-      //   console.error('只有一个组 后续看如何判断')
-      //   //只有一个组
-      // }
+      /**3 */
+      //判断上一个item是否为逻辑符号  是 则改组没有兄弟组
+      const fristSgIndex = arr.findIndex((item) => item.uid === sgArr[0]),
+        prevItem = arr[fristSgIndex - 1]
+      if (arr[fristSgIndex - 1].type === 'logical') {
+        licenseData.value = arr.filter((item) => !sgArr.includes(item.uid)).filter((item) => item.uid !== prevItem.uid)
+        selectGroup.value = []
+      } else {
+        console.error('只有一个组 后续看如何判断')
+        //只有一个组
+      }
     }
 
     return () => (
