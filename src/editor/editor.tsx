@@ -230,9 +230,10 @@ export default defineComponent({
        * 2.1, 2.2 一样的处理逻辑
        */
       if (sameLevelItemNum === 1 || (sameLevelItemNum === 2 && sameLevelNotSelfOpenBracketNum === 2 && sameLevel !== 1)) {
+        debugger
         let sameLevelItemArrlogicalItem = sameLevelItemArr.find(({ type, level }) => type === TypeValue.logical && level === sameLevel)
         const sameLevelNotSelfUidArr = sameLevelNotSelfArr.map((item) => item.uid)
-
+        console.log(322)
         licenceData.value = arr
           .filter((item) => item.uid !== uid) //删除选中许可证
           .filter((item) => item.uid !== arr[fatherOpenBracketIndex].uid) //删除选中组的父亲开括号
@@ -354,8 +355,6 @@ export default defineComponent({
 
       for (let index = fatherOpenBracketIndex; index <= fatherCloseBracketIndex; index++) {
         const item = arr[index]
-        //  if (item.level === sameLevel && (item.type === TypeValue.logical || item.type === TypeValue.licence)) sameLevelItemArr.push(item)
-
         if (item.level === sameLevel && item.uid !== fristSgItem.uid && item.uid !== lastSgItem.uid) sameLevelItemArr.push(item)
       }
 
@@ -371,25 +370,43 @@ export default defineComponent({
 
         let sameLevelItemArrlogicalItem = sameLevelItemArr.find(({ type }) => type === TypeValue.logical)
         let sameLevelItemArrLicenceItem = sameLevelItemArr.find(({ type }) => type === TypeValue.licence)
-        let sameLevelItemArrBracketItem = sameLevelItemArr.find(({ type }) => type === TypeValue.openBracket)
+        let sameLevelItemOpenBracketItem = sameLevelItemArr.find(({ type }) => type === TypeValue.openBracket)
+        let sameLevelItemCloseBracketItem = sameLevelItemArr.find(({ type }) => type === TypeValue.closeBracket)
 
-        licenceData.value = arr
-          .filter((item) => !sgArr.includes(item.uid)) //删除选中item
-          .filter((item) => item.uid !== arr[fatherOpenBracketIndex].uid) //删除选中组的父亲开括号
-          .filter((item) => item.uid !== arr[fatherCloseBracketIndex].uid) //删除选中组的父亲闭括号
-          .filter((item) => item.uid !== sameLevelItemArrlogicalItem!.uid) //删除选中组的兄弟item的逻辑
-
-        //() or licence
-        if (sameLevelItemArrLicenceItem && !sameLevelItemArrBracketItem) {
-          console.log('() or licence')
+        // 2.1.1 兄弟是许可证
+        if (sameLevelItemArrLicenceItem && !sameLevelItemOpenBracketItem) {
           licenceData.value.map((item) => {
             //修改选中组的兄弟item的许可证的level
             if (item.uid === sameLevelItemArrLicenceItem!.uid) item.level--
             return item
           })
+
+          licenceData.value = arr
+            .filter((item) => !sgArr.includes(item.uid)) //删除选中item
+            .filter((item) => item.uid !== arr[fatherOpenBracketIndex].uid) //删除选中组的父亲开括号
+            .filter((item) => item.uid !== arr[fatherCloseBracketIndex].uid) //删除选中组的父亲闭括号
+            .filter((item) => item.uid !== sameLevelItemArrlogicalItem!.uid) //删除选中组的兄弟item的逻辑
+        }
+
+        //2.1.2 兄弟是组 里面的元素都level--
+
+        //坑
+        if (!sameLevelItemArrLicenceItem && sameLevelItemOpenBracketItem) {
+          const openIndex = arr.findIndex((item) => item.uid === sameLevelItemOpenBracketItem?.uid),
+            closeIndex = arr.findIndex((item) => item.uid === sameLevelItemCloseBracketItem?.uid)
+          for (let index = openIndex + 1; index < closeIndex; index++) {
+            licenceData.value[index].level = licenceData.value[index].level - 1
+          }
+
+          licenceData.value = arr
+            .filter((item) => !sgArr.includes(item.uid)) //删除选中item
+            .filter((item) => item.uid !== arr[openIndex].uid) //删除选中组的开括号
+            .filter((item) => item.uid !== arr[closeIndex].uid) //删除选中组的闭括号
+            .filter((item) => item.uid !== sameLevelItemArrlogicalItem!.uid) //删除选中组的兄弟item的逻辑
         }
       } else {
         /**
+         * 2.2
          * 兄弟大于1个
          * 根据选中组的最后一个item的nextItem是否为logical类型
          * 如果是 说明不是最后的组 则删除下面的逻辑item ，
