@@ -162,17 +162,13 @@ export default defineComponent({
       } else {
         /**(2,3) 不选中组添加 */
         //2
-
         if (arr.length > 0) {
           //2-1.等级全部+1
           arr.map((item) => (item.level += 1))
-
           //2-2.数组头部添加开括号
           arr.splice(0, 0, { type: TypeValue.openBracket, value: '(', level: 0, uid: setUid() })
-
           //2-3.数组尾部添加闭括号
           arr.push({ type: TypeValue.closeBracket, value: ')', level: 0, uid: setUid() })
-
           //2-4.数组倒数第二位添加逻辑和许可证
           arr.splice(
             arr.length - 1,
@@ -215,25 +211,17 @@ export default defineComponent({
 
       const sameLevelNotSelfArr = sameLevelItemArr.filter((item) => item.level >= sameLevel && item.uid !== uid)
       let sameLevelItemNum = sameLevelItemArr.reduce(
-          (value, item) => (item.type === TypeValue.logical && item.level === sameLevel ? ++value : value),
-          0
-        ),
-        sameLevelNotSelfOpenBracketNum = sameLevelNotSelfArr.reduce(
-          (value, item) => (item.level === sameLevel && item.type === TypeValue.openBracket ? ++value : value),
-          0
-        )
+        (value, item) => (item.type === TypeValue.logical && item.level === sameLevel ? ++value : value),
+        0
+      )
 
       const itemIndex = arr.findIndex((item) => item.uid === licenceItem.uid)
       /**
        * 2.1.  sameLevelItemNum === 1 兄弟只有1个 删除 父级开闭括号 逻辑、和自己。  同时兄弟level - 1
-       * 2.2.  (sameLevelItemNum === 2 && sameLevelNotSelfOpenBracketNum === 2 && sameLevel !== 1)
-       * 2.1, 2.2 一样的处理逻辑
        */
-      if (sameLevelItemNum === 1 || (sameLevelItemNum === 2 && sameLevelNotSelfOpenBracketNum === 2 && sameLevel !== 1)) {
-        debugger
+      if (sameLevelItemNum === 1) {
         let sameLevelItemArrlogicalItem = sameLevelItemArr.find(({ type, level }) => type === TypeValue.logical && level === sameLevel)
         const sameLevelNotSelfUidArr = sameLevelNotSelfArr.map((item) => item.uid)
-        console.log(322)
         licenceData.value = arr
           .filter((item) => item.uid !== uid) //删除选中许可证
           .filter((item) => item.uid !== arr[fatherOpenBracketIndex].uid) //删除选中组的父亲开括号
@@ -245,7 +233,6 @@ export default defineComponent({
             return item
           })
       } else {
-        //3.
         let delLogicalUid = ''
         arr[itemIndex + 1].type === TypeValue.logical ? (delLogicalUid = arr[itemIndex + 1].uid) : (delLogicalUid = arr[itemIndex - 1].uid)
         licenceData.value = arr.filter((item) => item.uid !== uid && item.uid !== delLogicalUid)
