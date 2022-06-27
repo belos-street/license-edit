@@ -15,17 +15,14 @@
 ## 删除许可证
 1.该许可证是不是level === 0  , licenseData = []
 2.该许可证的兄弟(开括号和许可证类型)是否只有一个
-
    1. 只有一个兄弟 删除 父级开闭括号 逻辑、和自己。  同时兄弟level - 1
    1. 2个及以上兄弟
-
 ## 添加组
 
 1. 选中组添加 选中的区间数组倒数第二位添加的逻辑和组(licence and licence)
 1. 不选中添加
    1. licenseData.value.length > 1 出一对括号包住 licenseData.value数组头部添加开括号 尾部闭括号 倒数第二位添加逻辑元素符号和组(licence and licence)
    1. licenseData.value.length <= 1 数组长度是0的时候 不显示
-
 ## 删除选定组
 
 1. 该组是不是level === 0 的组
@@ -37,3 +34,8 @@
       1. 选中的组不是父组中最后的组 删下面的逻辑item
       1. 选中的组是父组中最后的组 删上面的逻辑item
 ## 保存校验数据算法
+## Level添加算法
+
+- 初始化原始数组的属性 添加level和uid 
+- 闭括号**level - 1**
+- 开括号**level + 1**
