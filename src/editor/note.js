@@ -1,6 +1,9 @@
 /**
  * 规则： 
- * 1.()中至少两个类型 可以是(licence or licence)  (() or ())   (() or licence)
+ * 1.()中至少两个类型 
+ * 2.组的元素为：
+ *  2.1 (licence or licence)  
+ *  2.2 (() or ())   (() or licence)
  */
 
 /**
